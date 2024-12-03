@@ -4,16 +4,14 @@ import os
 import math
 import subprocess
 import requests
-from rich import print
 
-# Text color escape codes
 RED = "\033[31m"
 GREEN = "\033[32m"
 YELLOW = "\033[33m"
 BLUE = "\033[34m"
 MAGENTA = "\033[35m"
 CYAN = "\033[36m"
-RESET = "\033[0m"  # Resets the text color
+RESET = "\033[0m"
 
 file_path = 'terms.json'
 
