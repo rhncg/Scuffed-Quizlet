@@ -17,8 +17,13 @@ RESET = "\033[0m"  # Resets the text color
 
 file_path = 'terms.json'
 
+answered = 0
+correct = 0
+
 data = {}
 current_ans = ""
+
+used = []
 
 if os.path.exists(file_path):
     try:
@@ -136,10 +141,19 @@ def reload_data():
         data = json.load(file)
 
 def multi():
+    global used
+    global answered
+    global correct
     reload_data()
     if data["Terms"] and data["Definitions"]:
         options = []
-        q = random.randint(1, len(data["Terms"]))
+        if len(used) < len(data["Terms"]):
+            q = random.randint(1, len(data["Terms"]))
+            while q in used:
+                q = random.randint(1, len(data["Terms"]))
+            used.append(q)
+        else:
+            used = []
         options.append(data["Definitions"][str(q)])
 
         while len(options) < 4:
@@ -156,9 +170,11 @@ def multi():
             return
         elif data["Definitions"][str(q)] == options[int(ans)-1]:
             print(f"{GREEN}Correct{RESET}")
+            correct += 1
         else:
             print(f'{RED}Wrong. Correct Answer: {data["Definitions"][str(q)]}{RESET}')
         print("\n")
+        answered += 1
         multi()
     else:
         print(f"{RED}The json file is corrupted or broken{RESET}")
@@ -166,19 +182,32 @@ def multi():
         return
 
 def write():
+    global used
+    global answered
+    global correct
     reload_data()
     if data["Terms"] and data["Definitions"]:
         rnd = random.randint(1, len(data["Terms"]))
+        if len(used) < len(data["Terms"]):
+            rnd = random.randint(1, len(data["Terms"]))
+            while rnd in used:
+                rnd = random.randint(1, len(data["Terms"]))
+            used.append(rnd)
+        else:
+            used = []
+
         q = input(data["Terms"][str(rnd)] + ": ")
 
         if q.lower() == data["Definitions"][str(rnd)].lower():
             print(f"{GREEN}Correct{RESET}")
+            correct += 1
         elif q == "exit":
             main()
             return
         else:
             print(f'{RED}Incorrect. Correct Answer: {data["Definitions"][str(rnd)]}{RESET}')
         print("\n")
+        answered += 1
         write()
         return
     else:
@@ -215,12 +244,19 @@ def test():
         answers = {} # answer given by user
         questions = {} # question given for question #i
         num_correct = 0
+        used = []
         for i in range(int(nqs)):
             if data["Terms"] and data["Definitions"]:
                 options = []
-                q = random.randint(1, len(data["Terms"]))
-                options.append(data["Definitions"][str(q)])
+                if len(used) < len(data["Terms"]):
+                    q = random.randint(1, len(data["Terms"]))
+                    while q in used:
+                        q = random.randint(1, len(data["Terms"]))
+                    used.append(q)
+                else:
+                    used = []
 
+                options.append(data["Definitions"][str(q)])
                 while len(options) < 4:
                     rnd = random.randint(1, len(data["Terms"]))
                     if not data["Definitions"][str(rnd)] in options:
@@ -261,14 +297,22 @@ def test():
         answers = {}
         questions = {}
         num_correct = 0
+        used = []
         for i in range(int(nqs)):
             if data["Terms"] and data["Definitions"]:
-                rnd = random.randint(1, len(data["Terms"]))
+                if len(used) < len(data["Terms"]):
+                    rnd = random.randint(1, len(data["Terms"]))
+                    while rnd in used:
+                        rnd = random.randint(1, len(data["Terms"]))
+                    used.append(rnd)
+                else:
+                    used = []
+
                 print(f"Question #{str(i+1)}\n")
                 q = input(data["Terms"][str(rnd)] + ": ")
 
                 if q.lower() == data["Definitions"][str(rnd)].lower():
-                    questions[str(i+1)] = data["Terms"][str(rnd+1)]
+                    questions[str(i+1)] = data["Terms"][str(rnd)]
                     answers[str(i+1)] = f'{GREEN}"{q}" is correct.{RESET}'
                     num_correct += 1
                 elif q == "exit":
@@ -366,6 +410,14 @@ def debug():
         main()
         return
 
+def stats():
+    global correct
+    global answered
+    print("Stats:")
+    print(f"Correct: {correct}/{answered} ({math.ceil((correct/answered)*100)}%)")
+    main()
+    return
+
 def main():
     print("\n")
     print(f"{BLUE}-Scuffed Quizlet-{RESET}")
@@ -376,6 +428,7 @@ def main():
     print("3. Test your Knowledge")
     print("4. Create New Set")
     print("5. Search for a Set")
+    print("6. View Stats")
     mode = input("")
     print("\n")
 
@@ -395,6 +448,8 @@ def main():
         test()
     elif "se" in mode.lower() or mode == "5":
         search_sets()
+    elif "st" in mode.lower() or mode == "6":
+        stats()
     else:
         print(f"{RED}Error: No valid mode provided{RESET}")
         main()

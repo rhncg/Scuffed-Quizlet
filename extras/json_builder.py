@@ -13,20 +13,25 @@ instructions = input("Press enter to continue to add the copied text to the file
 with open('terms.json', 'w+') as file:
     set = {title: {}}
 
+    '''
     if os.path.exists('quizlet_data.txt'):
         os.remove('quizlet_data.txt')
 
     with open('quizlet_data.txt', 'w+') as data:
         file.write('')
-    
+    '''
+
     quizlet_data_path = 'quizlet_data.txt'
 
+    '''
     try:
             subprocess.run(['nano', quizlet_data_path], check=True)
     except FileNotFoundError:
             print("nano is not installed or not found in your PATH.")
     except subprocess.CalledProcessError as e:
             print(f"An error occurred while trying to open the file: {e}")
+    '''
+
     with open(quizlet_data_path, 'r') as file:
             input_string = file.read()
 
