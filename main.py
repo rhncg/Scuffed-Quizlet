@@ -222,7 +222,7 @@ def test():
     if not "mu" in tmode.lower() and not "wr" in tmode.lower():
         print(f"{RED}Invalid option{RESET}")
         test()
-    nqs = input("How many questions do you want to have in your test? (There may be repeats of questions sorry)\n")
+    nqs = input("How many questions do you want to have in your test?\n")
     if nqs == "exit":
         main()
         return
