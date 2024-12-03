@@ -412,6 +412,10 @@ def stats():
     global correct
     global answered
     print("Stats:")
+    if answered == 0:
+        print("No stats to show")
+        main()
+        return
     print(f"Correct: {correct}/{answered} ({math.ceil((correct/answered)*100)}%)")
     main()
     return
