@@ -349,29 +349,34 @@ def create_set():
             return
 
     elif "qu" in new_set_method.lower() or "export" in new_set_method.lower():
+        quizlet_data_path = "quizlet_data.txt"
         term_def_split= "@@"
         set_split = "##"
-        instructions = input('\nINSTRUCTIONS ON HOW TO EXPORT QUIZLET SET\n1. Go to a quizlet set that YOU OWN and click the three dots next to the Share and Edit buttons.\n2. Select "Export"\n3. IMPORTANT: You will see a menu with a bunch of options at the top. Do not mess the following instructions up.\n4. For the "Between term and definition" option, choose Custom and write "@@" in the box.\n5. For the "Between rows" option, choose Custom and write "##" in the box.\n6. After you press enter, Select All (Ctrl + A), and replace any text in the file with the text you just copied. After you are done, press Ctrl + X then "Y", then press Enter.\n7. If your quizlet set has "@" or "#" symbols, type "adv" and press enter now to change the split characters.\n')
-        if instructions == "exit":
-            main()
-            return
-        
-        if instructions == "adv":
-            term_def_split = input("Between term and definition split characters: ")
-            set_split = input("Between definitions split characters: ")
-            instructions = input("Press enter to continue to add the copied text to the file\n")
 
-        quizlet_data_path = "quizlet_data.txt"
-        if os.path.exists(quizlet_data_path):
-            os.remove(quizlet_data_path)
-        with open(quizlet_data_path, 'w') as file:
-            file.write("")
-        try:
-            subprocess.run(['nano', quizlet_data_path], check=True)
-        except FileNotFoundError:
-            print(f"{RED}nano is not installed or not found in your PATH.{RESET}")
-        except subprocess.CalledProcessError as e:
-            print(f"{RED}An error occurred while trying to open the file: {e}{RESET}")
+        manual_import = input("Would you like to manually import the Quizlet set or open it in nano? (type 'nano' or 'manual')\n")
+        if "na" in manual_import.lower():
+            instructions = input('\nINSTRUCTIONS ON HOW TO EXPORT QUIZLET SET\n1. Go to a quizlet set that YOU OWN and click the three dots next to the Share and Edit buttons.\n2. Select "Export"\n3. IMPORTANT: You will see a menu with a bunch of options at the top. Do not mess the following instructions up.\n4. For the "Between term and definition" option, choose Custom and write "@@" in the box.\n5. For the "Between rows" option, choose Custom and write "##" in the box.\n6. After you press enter, Select All (Ctrl + A), and replace any text in the file with the text you just copied. After you are done, press Ctrl + X then "Y", then press Enter.\n7. If your quizlet set has "@" or "#" symbols, type "adv" and press enter now to change the split characters.\n')
+            if instructions == "exit":
+                main()
+                return
+
+        
+            if instructions == "adv":
+                term_def_split = input("Between term and definition split characters: ")
+                set_split = input("Between definitions split characters: ")
+                instructions = input("Press enter to continue to add the copied text to the file\n")
+
+            if os.path.exists(quizlet_data_path):
+                os.remove(quizlet_data_path)
+            with open(quizlet_data_path, 'w') as file:
+                file.write("")
+            try:
+                subprocess.run(['nano', quizlet_data_path], check=True)
+            except FileNotFoundError:
+                print(f"{RED}nano is not installed or not found in your PATH.{RESET}")
+            except subprocess.CalledProcessError as e:
+                print(f"{RED}An error occurred while trying to open the file: {e}{RESET}")
+
         with open(quizlet_data_path, 'r') as file:
             input_string = file.read()
 
