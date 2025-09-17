@@ -22,6 +22,7 @@ data = {}
 current_ans = ""
 
 used = []
+starred = []
 
 if os.path.exists(file_path):
     try:
@@ -61,7 +62,6 @@ def search_sets():
             return
         if 1 <= int(set_num) <= len(set_names):
             selected_set = set_names[int(set_num) - 1]
-            # Save the selected set to 'terms.json'
             with open('terms.json', 'w') as file:
                 json.dump(sets[selected_set], file, indent=4)
             
@@ -103,7 +103,6 @@ def search_sets():
             return
         if 1 <= int(set_num) <= len(found_sets):
             selected_set = found_sets[int(set_num) - 1]
-            # Save the selected set to 'terms.json'
             with open('terms.json', 'w') as file:
                 json.dump(sets[selected_set], file, indent=4)
             
@@ -124,8 +123,10 @@ def search_sets():
 
 def multi_check_ans(q, options):
     global current_ans
-    valid_terms = ["1", "2", "3", "4", "exit"]
-    ans = input(f'{data["Terms"][str(q)]}\n1. {options[0]}\n2. {options[1]}\n3. {options[2]}\n4. {options[3]}\n\n')
+
+    valid_terms = [str(i) for i in range(1, len(options) + 1)] + ["exit"]
+    opts_text = "\n".join([f"{i+1}. {options[i]}" for i in range(len(options))])
+    ans = input(f'{data["Terms"][str(q)]}\n{opts_text}\n\n')
     if not ans in valid_terms:
         print(f"{RED}Invalid option. Try again.{RESET}\n")
         multi_check_ans(q, options)
@@ -138,28 +139,44 @@ def reload_data():
     with open(file_path, 'r') as file:
         data = json.load(file)
 
+def get_allowed_ids():
+    max_n = len(data.get("Terms", {}))
+    if max_n == 0:
+        return []
+    
+    allowed = [idx + 1 for idx in starred if isinstance(idx, int) and 0 <= idx < max_n]
+    if not allowed:
+        return list(range(1, max_n + 1))
+    return allowed
+
 def multi():
     global used
     global answered
     global correct
     reload_data()
     if data["Terms"] and data["Definitions"]:
-        options = []
-        if len(used) < len(data["Terms"]):
-            q = random.randint(1, len(data["Terms"]))
-            while q in used:
-                q = random.randint(1, len(data["Terms"]))
-            used.append(q)
-        else:
+        allowed_ids = get_allowed_ids()
+        if not allowed_ids:
+            print(f"{RED}The json file is corrupted or broken{RESET}")
+            main()
+            return
+
+        used_pool = [u for u in used if u in allowed_ids]
+        if len(used_pool) >= len(allowed_ids):
             used = []
-        options.append(data["Definitions"][str(q)])
+            used_pool = []
+        q = random.choice([i for i in allowed_ids if i not in used_pool])
+        used.append(q)
 
-        while len(options) < 4:
-            rnd = random.randint(1, len(data["Terms"]))
-            if not data["Definitions"][str(rnd)] in options:
-                options.append(data["Definitions"][str(rnd)])
+        options = [data["Definitions"][str(q)]]
+        target_len = min(4, len(allowed_ids))
+        while len(options) < target_len:
+            rnd = random.choice(allowed_ids)
+            cand = data["Definitions"][str(rnd)]
+            if cand not in options:
+                options.append(cand)
 
-        random.shuffle(options)       
+        random.shuffle(options)
         multi_check_ans(q, options)
         ans = current_ans
 
@@ -185,14 +202,17 @@ def write():
     global correct
     reload_data()
     if data["Terms"] and data["Definitions"]:
-        rnd = random.randint(1, len(data["Terms"]))
-        if len(used) < len(data["Terms"]):
-            rnd = random.randint(1, len(data["Terms"]))
-            while rnd in used:
-                rnd = random.randint(1, len(data["Terms"]))
-            used.append(rnd)
-        else:
+        allowed_ids = get_allowed_ids()
+        if not allowed_ids:
+            print(f"{RED}The json file is corrupted or broken{RESET}")
+            main()
+            return
+        used_pool = [u for u in used if u in allowed_ids]
+        if len(used_pool) >= len(allowed_ids):
             used = []
+            used_pool = []
+        rnd = random.choice([i for i in allowed_ids if i not in used_pool])
+        used.append(rnd)
 
         q = input(data["Terms"][str(rnd)] + ": ")
 
@@ -239,26 +259,29 @@ def test():
 
     print("\n")
     if "mu" in tmode.lower():
-        answers = {} # answer given by user
-        questions = {} # question given for question #i
+        answers = {}
+        questions = {}
         num_correct = 0
         used = []
+        allowed_ids = get_allowed_ids()
+        if not allowed_ids:
+            print(f"{RED}The json file is corrupted or broken{RESET}")
+            main()
+            return
         for i in range(int(nqs)):
             if data["Terms"] and data["Definitions"]:
-                options = []
-                if len(used) < len(data["Terms"]):
-                    q = random.randint(1, len(data["Terms"]))
-                    while q in used:
-                        q = random.randint(1, len(data["Terms"]))
-                    used.append(q)
-                else:
+                if len(used) >= len(allowed_ids):
                     used = []
+                q = random.choice([i for i in allowed_ids if i not in used] or allowed_ids)
+                used.append(q)
 
-                options.append(data["Definitions"][str(q)])
-                while len(options) < 4:
-                    rnd = random.randint(1, len(data["Terms"]))
-                    if not data["Definitions"][str(rnd)] in options:
-                        options.append(data["Definitions"][str(rnd)])
+                options = [data["Definitions"][str(q)]]
+                target_len = min(4, len(allowed_ids))
+                while len(options) < target_len:
+                    rnd = random.choice(allowed_ids)
+                    cand = data["Definitions"][str(rnd)]
+                    if cand not in options:
+                        options.append(cand)
 
                 random.shuffle(options)
                 print(f"Question #{str(i+1)}\n")
@@ -268,7 +291,7 @@ def test():
                 if ans == "exit":
                     main()
                     return
-                elif int(ans) > 0 and int(ans) < 5 and data["Definitions"][str(q)] == options[int(ans)-1]:
+                elif int(ans) > 0 and int(ans) <= len(options) and data["Definitions"][str(q)] == options[int(ans)-1]:
                     questions[str(i+1)] = data["Terms"][str(q)]
                     answers[str(i+1)] = f'{GREEN}"{options[int(ans)-1]}" is correct.{RESET}'
                     num_correct += 1
@@ -296,15 +319,17 @@ def test():
         questions = {}
         num_correct = 0
         used = []
+        allowed_ids = get_allowed_ids()
+        if not allowed_ids:
+            print(f"{RED}The json file is corrupted or broken{RESET}")
+            main()
+            return
         for i in range(int(nqs)):
             if data["Terms"] and data["Definitions"]:
-                if len(used) < len(data["Terms"]):
-                    rnd = random.randint(1, len(data["Terms"]))
-                    while rnd in used:
-                        rnd = random.randint(1, len(data["Terms"]))
-                    used.append(rnd)
-                else:
+                if len(used) >= len(allowed_ids):
                     used = []
+                rnd = random.choice([i for i in allowed_ids if i not in used] or allowed_ids)
+                used.append(rnd)
 
                 print(f"Question #{str(i+1)}\n")
                 q = input(data["Terms"][str(rnd)] + ": ")
@@ -425,6 +450,69 @@ def stats():
     main()
     return
 
+def view_terms():
+    global starred
+    reload_data()
+    if data["Terms"] and data["Definitions"]:
+        for i in range(1, len(data["Terms"])+1):
+            star_marker = "* " if (i - 1) in starred else ""
+            print(f'{star_marker}Term #{i}: {data["Terms"][str(i)]} - Definition: {data["Definitions"][str(i)]}')
+    else:
+        print(f"{RED}The json file is corrupted or broken{RESET}")
+
+    star_terms = input("If you would like to star any terms, type in the term numbers separated by commas.\nType 'clear' to clear all starred terms. Otherwise, press enter to go back to the main menu.\n")
+    if star_terms == "clear":
+        starred = []
+        print(f"{GREEN}All starred terms cleared.{RESET}")
+        main()
+        return
+    
+    if star_terms == "exit" or star_terms == "":
+        main()
+        return
+    
+    star_list = star_terms.split(",")
+    star_list = [int(term.strip()) for term in star_list if term.strip().isnumeric() and 1 <= int(term.strip()) <= len(data["Terms"])]
+    for term_num in star_list:
+        starred.append(term_num - 1)
+    
+    print(f"{GREEN}Starred terms updated.{RESET}")
+    main()
+    return
+
+def flashcard():
+    global used
+    global answered
+    global correct
+    reload_data()
+    if data["Terms"] and data["Definitions"]:
+        allowed_ids = get_allowed_ids()
+        if not allowed_ids:
+            print(f"{RED}The json file is corrupted or broken{RESET}")
+            main()
+            return
+
+        used_pool = [u for u in used if u in allowed_ids]
+        if len(used_pool) >= len(allowed_ids):
+            used = []
+            used_pool = []
+        q = random.choice([i for i in allowed_ids if i not in used_pool])
+        used.append(q)
+
+        print(f'Term #{q}: {data["Terms"][str(q)]}')
+        input("Press enter to see the definition...")
+        print(f'Definition: {data["Definitions"][str(q)]}\n')
+        
+        cont = input("Press enter to continue or type 'exit' to return to the main menu...\n")
+        if cont.lower() == "exit":
+            main()
+            return
+        flashcard()
+    else:
+        print(f"{RED}The json file is corrupted or broken{RESET}")
+        main()
+        return
+
 def main():
     print("\n")
     print(f"{BLUE}-Scuffed Quizlet-{RESET}")
@@ -433,9 +521,11 @@ def main():
     print("1. Practice with Multiple Choice")
     print("2. Practice with Written Answers")
     print("3. Test your Knowledge")
-    print("4. Create New Set")
-    print("5. Search for a Set")
-    print("6. View Stats")
+    print("4. Flashcards")
+    print("5. Create New Set")
+    print("6. Search for a Set")
+    print("7. View and star terms")
+    print("8. View Stats")
     mode = input("")
     print("\n")
 
@@ -449,14 +539,18 @@ def main():
         multi()
     elif "wr" in mode.lower() or mode == "2":
         write()
-    elif "cr" in mode.lower() or mode == "4":
+    elif "cr" in mode.lower() or mode == "5":
         create_set()
     elif "te" in mode.lower() or mode == "3":
         test()
-    elif "se" in mode.lower() or mode == "5":
+    elif "se" in mode.lower() or mode == "6":
         search_sets()
-    elif "st" in mode.lower() or mode == "6":
+    elif "vi" in mode.lower() or mode == "7" or "st" in mode.lower():
+        view_terms()
+    elif "8" == mode:
         stats()
+    elif "fl" in mode.lower() or "4" == mode:
+        flashcard()
     else:
         print(f"{RED}Error: No valid mode provided{RESET}")
         main()
