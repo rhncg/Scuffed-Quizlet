@@ -20,6 +20,7 @@ correct = 0
 
 data = {}
 current_ans = ""
+switch_terms = False
 
 used = []
 starred = []
@@ -138,6 +139,10 @@ def reload_data():
     global data
     with open(file_path, 'r') as file:
         data = json.load(file)
+        if switch_terms:
+            temp = data["Terms"]
+            data["Terms"] = data["Definitions"]
+            data["Definitions"] = temp
 
 def get_allowed_ids():
     max_n = len(data.get("Terms", {}))
@@ -513,6 +518,24 @@ def flashcard():
         main()
         return
 
+def options():
+    global switch_terms
+
+    option = input(
+    "1. Switch Terms and Definitions\n"
+    "2. Back to Main Menu\n")
+    if option == "1":
+        switch_terms = not switch_terms
+        reload_data()
+        main()
+        return
+    elif option == "2":
+        main()
+        return
+    else:
+        print(f"{RED}Error: No valid option provided{RESET}")
+        options()
+        
 def main():
     print("\n")
     print(f"{BLUE}-Scuffed Quizlet-{RESET}")
@@ -526,6 +549,7 @@ def main():
     print("6. Search for a Set")
     print("7. View and star terms")
     print("8. View Stats")
+    print("9. Options")
     mode = input("")
     print("\n")
 
@@ -551,6 +575,8 @@ def main():
         stats()
     elif "fl" in mode.lower() or "4" == mode:
         flashcard()
+    elif "op" in mode.lower() or "9" == mode:
+        options()
     else:
         print(f"{RED}Error: No valid mode provided{RESET}")
         main()
